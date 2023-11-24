@@ -1,0 +1,16 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.portWin": "COM3",
+  "idf.flashType": "UART",
+  "C_Cpp.default.compilerPath": "",
+  "idf.adapterTargetName": "esp32",
+  "files.associations": {
+    "esp_mesh.h": "c",
+    "esp_log.h": "c",
+    "mqtt_client.h": "c",
+    "esp_tls.h": "c",
+    "stdbool.h": "c",
+    "esp_partition.h": "c",
+    "esp_netif.h": "c"
+  }
+}
