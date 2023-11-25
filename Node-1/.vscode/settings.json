@@ -1,11 +1,13 @@
 {
   "C_Cpp.intelliSenseEngine": "default",
-  "idf.portWin": "COM7",
+  "idf.portWin": "COM3",
   "idf.flashType": "UART",
   "files.associations": {
     "string.h": "c",
     "*.tcc": "c",
-    "cstdio": "c"
+    "cstdio": "c",
+    "compare": "c"
   },
-  "idf.adapterTargetName": "esp32"
+  "idf.adapterTargetName": "esp32",
+  "idf.customAdapterTargetName": "esp8266"
 }

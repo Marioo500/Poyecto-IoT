@@ -31,8 +31,8 @@
 #include "dht11.h"
 #include "crc32.h"
 
-#define RX_SIZE          (512)
-#define TX_SIZE          (512)
+#define RX_SIZE          (1500)
+#define TX_SIZE          (1460)
 
 static const char *MESH_TAG = "mesh_main";
 static const char *TAG = "EJEMPLO MESH SOY NODO";
@@ -51,7 +51,7 @@ static esp_netif_t *netif_sta = NULL;
 
 uint8_t i = 0;
 char buffer[50];
-char buffer_mediciones[50];
+char buffer_mediciones[512];
 
 crc32_struct paquete = {
     .cabecera = 0x5A,
@@ -60,7 +60,10 @@ crc32_struct paquete = {
 
 void leer_sensor()
 {
-    snprintf(buffer, 50, "{\"humidity\":%d}", DHT11_read().humidity);
+    snprintf((const char*)paquete.datos, 128, "{\"humidity\":%d}", DHT11_read().humidity);
+    paquete.longitud = strlen((char*)paquete.datos);
+    paquete.crc32_end_cabecera = crc32a(&paquete);
+    crc2string(buffer_mediciones, paquete);
 }
 
 void esp_mesh_p2p_tx_main(void *arg)
@@ -87,7 +90,7 @@ void esp_mesh_p2p_tx_main(void *arg)
                      esp_mesh_get_routing_table_size(),
                      (is_mesh_connected && esp_mesh_is_root()) ? "ROOT" : is_mesh_connected ? "NODE" : "DISCONNECT");
             vTaskDelay(1 * 1000 / portTICK_PERIOD_MS);
-            snprintf( (char*)tx_buf, TX_SIZE, "%s", buffer); 
+            memcpy(tx_buf, buffer_mediciones, sizeof(buffer_mediciones)); 
             for (i = 0; i < route_table_size; i++)
             {
                 err = esp_mesh_send(NULL, &data, MESH_DATA_P2P, NULL, 0);

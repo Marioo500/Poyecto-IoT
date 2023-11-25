@@ -1,0 +1,12 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "files.associations": {
+    "esp_mac.h": "c",
+    "string_view": "c",
+    "regex": "c",
+    "random": "cpp",
+    "esp_system.h": "c"
+  },
+  "idf.portWin": "COM3",
+  "idf.flashType": "UART"
+}

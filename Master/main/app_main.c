@@ -1,12 +1,3 @@
-/* MQTT over SSL Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -26,8 +17,10 @@
 #include "esp_wifi.h"
 #include "esp_mac.h"
 
-#define RX_SIZE          (512)
-#define TX_SIZE          (512)
+#include "crc32.h"
+ 
+#define RX_SIZE          (1500)
+#define TX_SIZE          (1460)
 #define ADC1_EXAMPLE_CHAN0          ADC1_CHANNEL_6
 #define ADC_EXAMPLE_ATTEN           ADC_ATTEN_DB_11
 #define ADC_EXAMPLE_CALI_SCHEME     ESP_ADC_CAL_VAL_EFUSE_VREF
@@ -55,7 +48,12 @@ static bool is_mesh_connected = false;
 static mesh_addr_t mesh_parent_addr;
 static int mesh_layer = -1;
 static esp_netif_t *netif_sta = NULL;
-char buffer[50];
+char buffer[100];
+
+crc32_struct paquete = {
+    .cabecera = 0x5A,
+    .fin = 0xFF,
+};
 
 /*FUNCIONES MQTT*/
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
@@ -153,7 +151,7 @@ void esp_mesh_p2p_tx_main(void *arg)
             ESP_LOGI(MESH_TAG, "layer:%d, rtableSize:%d, %s", mesh_layer,
                      esp_mesh_get_routing_table_size(),
                      (is_mesh_connected && esp_mesh_is_root()) ? "ROOT" : is_mesh_connected ? "NODE" : "DISCONNECT");
-            vTaskDelay(1 * 1000 / portTICK_PERIOD_MS);
+            vTaskDelay(1 * 2000 / portTICK_PERIOD_MS);
             snprintf( (char*)tx_buf, TX_SIZE, "%s", buffer); 
             err = esp_mesh_send(NULL, &data, MESH_DATA_P2P, NULL, 0);
             if (err)
@@ -196,6 +194,13 @@ void esp_mesh_p2p_rx_main(void *arg)
     data.size = RX_SIZE;
     is_running = true;
 
+    
+    char bufferAll[512];
+    char bufferMQTT[100];
+    char crcBufferRecieved[20];
+    char crcBufferValidation[20];
+    const char delim[] = ",";
+
     while (is_running) 
     {
         data.size = RX_SIZE;
@@ -209,9 +214,26 @@ void esp_mesh_p2p_rx_main(void *arg)
         {
             if (esp_mesh_is_root()) /* Manda hacia thingsboard*/
             {
-                esp_mqtt_client_publish(client, "v1/devices/me/telemetry", (char*)rx_buf, 0, 1, 0);
+                snprintf(bufferAll, 1460, "%s", data.data);
+                ESP_LOGI(MESH_TAG, "BUFFER RECIBIDO: %s", bufferAll);
+                char *token = strtok(bufferAll, delim);
+                memcpy(paquete.datos, token, 100);
+                token = strtok(NULL, delim);
+                snprintf(crcBufferRecieved, sizeof(bufferMQTT), "%s", token);
+                token = strtok(NULL, delim);
+                paquete.longitud = strlen((const char*)paquete.datos);
+                paquete.crc32_end_cabecera = crc32a(&paquete);
+                crc2string(bufferAll ,paquete);
+                token = strtok(bufferAll, delim);
+                token = strtok(NULL, delim);
+                snprintf(crcBufferValidation, 20, "%lx", paquete.crc32_end_cabecera);
+                ESP_LOGI(MESH_TAG, "crc que llega: %s \t crc que se hizo: %s", crcBufferRecieved, token);
+                if(!strcmp(crcBufferValidation, crcBufferRecieved))
+                {
+                    esp_mqtt_client_publish(client, "v1/devices/me/telemetry", (char*)paquete.datos, 0, 1, 0);
+                }
             }        
-            ESP_LOGE(MESH_TAG, "%s", rx_buf);             
+            ESP_LOGE(MESH_TAG, "%s", paquete.datos);             
         }
         recv_count++;
         if (!(recv_count % 1)) {
@@ -449,6 +471,7 @@ void ip_event_handler(void *arg, esp_event_base_t event_base,
 
 void app_main(void)
 {
+
 
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_netif_init());

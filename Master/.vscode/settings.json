@@ -11,6 +11,7 @@
     "esp_tls.h": "c",
     "stdbool.h": "c",
     "esp_partition.h": "c",
-    "esp_netif.h": "c"
+    "esp_netif.h": "c",
+    "esp_event.h": "c"
   }
 }

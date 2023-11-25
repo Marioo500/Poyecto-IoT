@@ -48,6 +48,5 @@ unsigned int crc32a(crc32_struct* paquete){
 }
 
 void crc2string(char* dest, crc32_struct paquete){
-    snprintf(dest, 512, "%x:%02x:%s:%x:%lx", paquete.cabecera, paquete.longitud, paquete.datos, paquete.fin, paquete.crc32_end_cabecera);
-
+    snprintf(dest, 512, "%s,%lx",paquete.datos, paquete.crc32_end_cabecera);
 }

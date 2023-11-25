@@ -1,8 +1,12 @@
 {
   "C_Cpp.intelliSenseEngine": "default",
   "files.associations": {
-    "esp_mac.h": "c"
+    "esp_mac.h": "c",
+    "complex": "c",
+    "esp_mesh_internal.h": "c",
+    "esp_event.h": "c"
   },
-  "idf.portWin": "COM10",
-  "idf.flashType": "UART"
+  "idf.portWin": "COM3",
+  "idf.flashType": "UART",
+  "idf.adapterTargetName": "esp32"
 }
